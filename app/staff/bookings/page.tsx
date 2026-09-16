@@ -83,6 +83,12 @@ export default async function StaffBookingsPage({
             nights: true,
             guests: true,
             totalCost: true,
+            declineReason: true,
+            room: {
+                select: {
+                    number: true,
+                },
+            },
             roomType: {
                 select: {
                     rooms: {
@@ -143,11 +149,10 @@ export default async function StaffBookingsPage({
                                 aria-current={
                                     isSelected ? "page" : undefined
                                 }
-                                className={`rounded-lg border px-5 py-3 text-sm font-semibold transition-colors ${
-                                    isSelected
-                                        ? "border-[#173F35] bg-[#173F35] text-white"
-                                        : "border-[#173F35]/20 bg-white text-[#173F35] hover:bg-[#173F35]/5"
-                                }`}
+                                className={`rounded-lg border px-5 py-3 text-sm font-semibold transition-colors ${isSelected
+                                    ? "border-[#173F35] bg-[#173F35] text-white"
+                                    : "border-[#173F35]/20 bg-white text-[#173F35] hover:bg-[#173F35]/5"
+                                    }`}
                             >
                                 {option.label}
                             </Link>
@@ -236,6 +241,33 @@ export default async function StaffBookingsPage({
 
                                     <p>Nights: {booking.nights}</p>
                                     <p>Guests: {booking.guests}</p>
+
+                                    {booking.status === "CONFIRMED" && (
+                                        <div className="mt-4 rounded-lg bg-green-50 p-4 text-green-900">
+                                            <p className="font-semibold">
+                                                Assigned room
+                                            </p>
+
+                                            <p className="mt-1">
+                                                {booking.room
+                                                    ? `Room ${booking.room.number}`
+                                                    : "No room assigned"}
+                                            </p>
+                                        </div>
+                                    )}
+
+                                    {booking.status === "DECLINED" && (
+                                        <div className="mt-4 rounded-lg bg-red-50 p-4 text-red-900">
+                                            <p className="font-semibold">
+                                                Reason for declining
+                                            </p>
+
+                                            <p className="mt-1 whitespace-pre-wrap wrap-break-word">
+                                                {booking.declineReason?.trim() ||
+                                                    "No reason recorded."}
+                                            </p>
+                                        </div>
+                                    )}
                                 </div>
 
                                 <div className="mt-6">
@@ -244,7 +276,7 @@ export default async function StaffBookingsPage({
                                     </h4>
 
                                     {booking.meals.length === 0 &&
-                                    booking.activities.length === 0 ? (
+                                        booking.activities.length === 0 ? (
                                         <p className="mt-2 text-sm text-gray-600">
                                             No extras selected.
                                         </p>
