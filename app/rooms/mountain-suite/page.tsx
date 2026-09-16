@@ -2,9 +2,20 @@ import Navbar from "../../components/Navbar";
 import Footer from "../../components/Footer";
 import Image from "next/image";
 import Link from "next/link";
-import { mountainSuite as room } from "../../lib/rooms";
+import { prisma } from "../../lib/prisma";
+import { notFound } from "next/navigation";
 
-export default function MountainSuitePage() {
+export default async function MountainSuitePage() {
+    const room = await prisma.roomType.findUnique({
+        where: {
+            slug: "mountain-suite",
+        },
+    });
+
+    if (!room) {
+        notFound();
+    }
+
     return (
         <div className="flex min-h-screen flex-col bg-[#F8F6EF] text-[#173F35]">
             <Navbar />
@@ -53,7 +64,7 @@ export default function MountainSuitePage() {
                 </ul>
 
                 <p className="mt-8 text-2xl font-bold">
-                    LKR {room.price.toLocaleString("en-US")} per night
+                    LKR {room.pricePerNight.toLocaleString("en-US")} per night
                 </p>
             </main>
 

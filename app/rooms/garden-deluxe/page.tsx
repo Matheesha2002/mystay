@@ -2,9 +2,21 @@ import Navbar from "../../components/Navbar";
 import Footer from "../../components/Footer";
 import Image from "next/image";
 import Link from "next/link";
-import { room } from "@/app/lib/rooms";
+import { prisma } from "../../lib/prisma";
+import { notFound } from "next/navigation";
 
-export default function GardenDeluxePage() {
+export default async function GardenDeluxePage() {
+    const room = await prisma.roomType.findUnique({
+        where: {
+            slug: "garden-deluxe",
+        },
+    });
+
+    if (!room) {
+        notFound();
+    }
+
+   
     return (
         <div className="flex min-h-screen flex-col bg-[#F8F6EF] text-[#173F35]">
             <Navbar />
@@ -52,7 +64,7 @@ export default function GardenDeluxePage() {
                 </ul>
 
                 <p className="mt-8 text-2xl font-bold">
-                    LKR {room.price.toLocaleString("en-US")} per night
+                    LKR {room.pricePerNight.toLocaleString("en-US")} per night
                 </p>
             </main>
 

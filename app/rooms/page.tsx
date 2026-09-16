@@ -1,9 +1,27 @@
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
-import { rooms } from "../lib/rooms";
+import { prisma } from "../lib/prisma";
 import RoomCard from "../components/RoomCard";
 
-export default function RoomsPage() {
+export default async function RoomsPage() {
+
+    const roomTypes = await prisma.roomType.findMany({
+        where: {
+            rooms: {
+                some: {
+                    isActive: true,
+                },
+            },
+        },
+        orderBy: {
+            pricePerNight: "asc",
+        },
+    });
+
+    const rooms = roomTypes.map((roomType) => ({
+        ...roomType,
+        price: roomType.pricePerNight,
+    }));
     return (
         <div className="flex min-h-screen flex-col bg-[#F8F6EF] text-[#173F35]">
             <Navbar />

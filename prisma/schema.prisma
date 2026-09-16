@@ -1,0 +1,166 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../app/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum BookingStatus {
+  PENDING
+  CONFIRMED
+  DECLINED
+  CANCELLED
+}
+
+model RoomType {
+  id                String   @id @default(cuid())
+  name              String
+  slug              String   @unique
+  description       String
+  pricePerNight     Int
+  capacity          Int
+  image             String
+  breakfastIncluded Boolean  @default(false)
+  amenities         String[]
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  rooms    Room[]
+  bookings Booking[]
+}
+
+model Room {
+  id         String  @id @default(cuid())
+  number     String  @unique
+  isActive   Boolean @default(true)
+  roomTypeId String
+
+  roomType RoomType @relation(fields: [roomTypeId], references: [id], onDelete: Restrict)
+
+  bookings Booking[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([roomTypeId])
+}
+
+model Meal {
+  id                    String   @id @default(cuid())
+  name                  String
+  slug                  String   @unique
+  description           String
+  pricePerGuestPerNight Int
+  isActive              Boolean  @default(true)
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  bookingMeals BookingMeal[]
+}
+
+model Activity {
+  id                      String   @id @default(cuid())
+  name                    String
+  slug                    String   @unique
+  description             String
+  pricePerGuestPerSession Int
+  isActive                Boolean  @default(true)
+  createdAt               DateTime @default(now())
+  updatedAt               DateTime @updatedAt
+
+  bookingActivities BookingActivity[]
+}
+
+model Booking {
+  id     String        @id @default(cuid())
+  status BookingStatus @default(PENDING)
+
+  // Supabase Auth user ID.
+  userId String @db.Uuid
+
+  // Contact details at the time of the request.
+  fullName String
+  email    String
+  phone    String
+
+  checkIn  DateTime @db.Date
+  checkOut DateTime @db.Date
+  nights   Int
+  guests   Int
+  budget   Int
+
+  // Customer-selected room type.
+  roomTypeId String
+  roomType   RoomType @relation(fields: [roomTypeId], references: [id], onDelete: Restrict)
+
+  // Staff assigns a physical room when confirming.
+  roomId String?
+  room   Room?   @relation(fields: [roomId], references: [id], onDelete: Restrict)
+
+  // Room details and prices captured at request time.
+  roomTypeName      String
+  roomPricePerNight Int
+  breakfastIncluded Boolean
+  roomCost          Int
+  mealCost          Int     @default(0)
+  activityCost      Int     @default(0)
+  totalCost         Int
+
+  meals      BookingMeal[]
+  activities BookingActivity[]
+
+  declineReason String?
+  confirmedAt   DateTime?
+  declinedAt    DateTime?
+  cancelledAt   DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId, createdAt])
+  @@index([status, createdAt])
+  @@index([roomTypeId])
+  @@index([roomId, status, checkIn, checkOut])
+}
+
+model BookingMeal {
+  id String @id @default(cuid())
+
+  bookingId String
+  booking   Booking @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+
+  mealId String
+  meal   Meal   @relation(fields: [mealId], references: [id], onDelete: Restrict)
+
+  // Saved price and quantities for this booking.
+  name                  String
+  pricePerGuestPerNight Int
+  guests                Int
+  nights                Int
+  totalCost             Int
+
+  @@unique([bookingId, mealId])
+  @@index([mealId])
+}
+
+model BookingActivity {
+  id String @id @default(cuid())
+
+  bookingId String
+  booking   Booking @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+
+  activityId String
+  activity   Activity @relation(fields: [activityId], references: [id], onDelete: Restrict)
+
+  // Saved price and quantities for this booking.
+  name                    String
+  pricePerGuestPerSession Int
+  guests                  Int
+  sessions                Int    @default(1)
+  totalCost               Int
+
+  @@unique([bookingId, activityId])
+  @@index([activityId])
+}
