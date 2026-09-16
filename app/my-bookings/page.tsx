@@ -4,6 +4,11 @@ import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 import { prisma } from "../lib/prisma";
 import { createClient } from "../lib/supabase/server";
+import CancelBookingButton from "../components/CancelBookingButton";
+import {
+    canCancelBooking,
+    todayInSriLanka,
+} from "../lib/booking-policy";
 
 const statusLabels = {
     PENDING: "Pending",
@@ -40,6 +45,8 @@ export default async function MyBookingsPage() {
     if (error || !user) {
         redirect("/login");
     }
+
+    const today = todayInSriLanka();
 
     // මේ userගේ bookings පමණක් ලබාගන්නවා.
     const bookings = await prisma.booking.findMany({
@@ -170,7 +177,7 @@ export default async function MyBookingsPage() {
                                     </h3>
 
                                     {booking.meals.length === 0 &&
-                                    booking.activities.length === 0 ? (
+                                        booking.activities.length === 0 ? (
                                         <p className="mt-2 text-sm text-gray-600">
                                             No extras selected.
                                         </p>
@@ -248,6 +255,27 @@ export default async function MyBookingsPage() {
                                         This booking has been cancelled.
                                     </p>
                                 )}
+
+                                {canCancelBooking(
+                                    booking.status,
+                                    booking.checkIn,
+                                    today
+                                ) && (
+                                        <CancelBookingButton bookingId={booking.id} />
+                                    )}
+
+                                {(booking.status === "PENDING" ||
+                                    booking.status === "CONFIRMED") &&
+                                    !canCancelBooking(
+                                        booking.status,
+                                        booking.checkIn,
+                                        today
+                                    ) && (
+                                        <p className="mt-4 text-sm text-gray-600">
+                                            Online cancellation closes when the check-in date
+                                            begins in Sri Lanka. Please contact the hotel for help.
+                                        </p>
+                                    )}
                             </article>
                         ))}
                     </div>

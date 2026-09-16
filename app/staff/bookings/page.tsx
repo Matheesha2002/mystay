@@ -27,6 +27,13 @@ const statusOptions = [
         description: "Booking requests declined by the hotel.",
         emptyMessage: "No declined bookings.",
     },
+    {
+        value: "CANCELLED",
+        label: "Cancelled",
+        badgeClass: "bg-gray-100 text-gray-700",
+        description: "Bookings cancelled by customers.",
+        emptyMessage: "No cancelled bookings.",
+    },
 ] as const;
 
 type PageProps = {
