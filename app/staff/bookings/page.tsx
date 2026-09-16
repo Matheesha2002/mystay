@@ -1,8 +1,39 @@
+import Link from "next/link";
 import Navbar from "../../components/Navbar";
 import Footer from "../../components/Footer";
 import { prisma } from "../../lib/prisma";
 import { requireStaff } from "../../lib/staff";
 import StaffBookingActions from "../../components/StaffBookingActions";
+
+const statusOptions = [
+    {
+        value: "PENDING",
+        label: "Pending",
+        badgeClass: "bg-amber-100 text-amber-900",
+        description: "Booking requests awaiting hotel review.",
+        emptyMessage: "No pending booking requests.",
+    },
+    {
+        value: "CONFIRMED",
+        label: "Confirmed",
+        badgeClass: "bg-green-100 text-green-900",
+        description: "Bookings confirmed by the hotel.",
+        emptyMessage: "No confirmed bookings yet.",
+    },
+    {
+        value: "DECLINED",
+        label: "Declined",
+        badgeClass: "bg-red-100 text-red-900",
+        description: "Booking requests declined by the hotel.",
+        emptyMessage: "No declined bookings.",
+    },
+] as const;
+
+type PageProps = {
+    searchParams: Promise<{
+        status?: string | string[];
+    }>;
+};
 
 function formatDate(date: Date) {
     return new Intl.DateTimeFormat("en-GB", {
@@ -13,20 +44,36 @@ function formatDate(date: Date) {
     }).format(date);
 }
 
-export default async function StaffBookingsPage() {
-    // Staff අවසර පරීක්ෂා කළ පසුව පමණක් bookings කියවනවා.
+export default async function StaffBookingsPage({
+    searchParams,
+}: PageProps) {
+    // අවසර පරීක්ෂා කළ පසුව පමණක් bookings කියවනවා.
     await requireStaff();
+
+    const params = await searchParams;
+
+    // නොගැළපෙන status එකක් ආවොත් Pending පෙන්වනවා.
+    const selectedOption =
+        statusOptions.find((option) => option.value === params.status) ??
+        statusOptions[0];
+
+    const selectedStatus = selectedOption.value;
 
     const bookings = await prisma.booking.findMany({
         where: {
-            status: "PENDING",
+            status: selectedStatus,
         },
         orderBy: [
-            { createdAt: "asc" },
+            {
+                createdAt:
+                    selectedStatus === "PENDING" ? "asc" : "desc",
+            },
             { id: "asc" },
         ],
         select: {
             id: true,
+            status: true,
+            createdAt: true,
             fullName: true,
             email: true,
             phone: true,
@@ -36,7 +83,6 @@ export default async function StaffBookingsPage() {
             nights: true,
             guests: true,
             totalCost: true,
-
             roomType: {
                 select: {
                     rooms: {
@@ -75,21 +121,61 @@ export default async function StaffBookingsPage() {
 
             <main className="mx-auto w-full max-w-6xl flex-1 px-6 py-16">
                 <h1 className="text-4xl font-bold">
-                    Staff Booking Requests
+                    Staff Bookings
                 </h1>
 
                 <p className="mt-4 text-lg">
-                    Pending requests awaiting hotel review.
+                    Review new requests and view booking history.
                 </p>
 
-                <p className="mt-2 text-sm text-gray-600">
-                    {bookings.length} pending{" "}
-                    {bookings.length === 1 ? "request" : "requests"}
-                </p>
+                <nav
+                    aria-label="Booking status filters"
+                    className="mt-8 flex flex-wrap gap-3"
+                >
+                    {statusOptions.map((option) => {
+                        const isSelected =
+                            option.value === selectedStatus;
+
+                        return (
+                            <Link
+                                key={option.value}
+                                href={`/staff/bookings?status=${option.value}`}
+                                aria-current={
+                                    isSelected ? "page" : undefined
+                                }
+                                className={`rounded-lg border px-5 py-3 text-sm font-semibold transition-colors ${
+                                    isSelected
+                                        ? "border-[#173F35] bg-[#173F35] text-white"
+                                        : "border-[#173F35]/20 bg-white text-[#173F35] hover:bg-[#173F35]/5"
+                                }`}
+                            >
+                                {option.label}
+                            </Link>
+                        );
+                    })}
+                </nav>
+
+                <div className="mt-6">
+                    <h2 className="text-2xl font-semibold">
+                        {selectedOption.label} bookings
+                    </h2>
+
+                    <p className="mt-2 text-sm text-gray-600">
+                        {selectedOption.description}
+                    </p>
+
+                    <p
+                        aria-live="polite"
+                        className="mt-2 text-sm font-medium"
+                    >
+                        {bookings.length}{" "}
+                        {bookings.length === 1 ? "booking" : "bookings"}
+                    </p>
+                </div>
 
                 {bookings.length === 0 ? (
                     <p className="mt-8 rounded-2xl border border-gray-200 bg-white p-6">
-                        No pending booking requests.
+                        {selectedOption.emptyMessage}
                     </p>
                 ) : (
                     <div className="mt-8 grid gap-6 md:grid-cols-2">
@@ -99,12 +185,14 @@ export default async function StaffBookingsPage() {
                                 className="min-w-0 rounded-2xl border border-gray-200 bg-white p-6"
                             >
                                 <div className="flex flex-wrap items-center justify-between gap-3">
-                                    <h2 className="text-2xl font-semibold">
+                                    <h3 className="text-2xl font-semibold">
                                         {booking.roomTypeName}
-                                    </h2>
+                                    </h3>
 
-                                    <span className="rounded-full bg-amber-100 px-3 py-1 text-sm font-medium text-amber-900">
-                                        Pending
+                                    <span
+                                        className={`rounded-full px-3 py-1 text-sm font-medium ${selectedOption.badgeClass}`}
+                                    >
+                                        {selectedOption.label}
                                     </span>
                                 </div>
 
@@ -112,10 +200,15 @@ export default async function StaffBookingsPage() {
                                     Reference: {booking.id}
                                 </p>
 
+                                <p className="mt-2 text-xs text-gray-500">
+                                    Requested on:{" "}
+                                    {formatDate(booking.createdAt)}
+                                </p>
+
                                 <div className="mt-6 space-y-2">
-                                    <h3 className="font-semibold">
+                                    <h4 className="font-semibold">
                                         Customer details
-                                    </h3>
+                                    </h4>
 
                                     <p>Name: {booking.fullName}</p>
 
@@ -127,9 +220,9 @@ export default async function StaffBookingsPage() {
                                 </div>
 
                                 <div className="mt-6 space-y-2">
-                                    <h3 className="font-semibold">
+                                    <h4 className="font-semibold">
                                         Stay details
-                                    </h3>
+                                    </h4>
 
                                     <p>
                                         Check-in:{" "}
@@ -141,22 +234,17 @@ export default async function StaffBookingsPage() {
                                         {formatDate(booking.checkOut)}
                                     </p>
 
-                                    <p>
-                                        Nights: {booking.nights}
-                                    </p>
-
-                                    <p>
-                                        Guests: {booking.guests}
-                                    </p>
+                                    <p>Nights: {booking.nights}</p>
+                                    <p>Guests: {booking.guests}</p>
                                 </div>
 
                                 <div className="mt-6">
-                                    <h3 className="font-semibold">
+                                    <h4 className="font-semibold">
                                         Selected extras
-                                    </h3>
+                                    </h4>
 
                                     {booking.meals.length === 0 &&
-                                        booking.activities.length === 0 ? (
+                                    booking.activities.length === 0 ? (
                                         <p className="mt-2 text-sm text-gray-600">
                                             No extras selected.
                                         </p>
@@ -189,10 +277,12 @@ export default async function StaffBookingsPage() {
                                     {booking.totalCost.toLocaleString("en-US")}
                                 </p>
 
-                                <StaffBookingActions
-                                    bookingId={booking.id}
-                                    rooms={booking.roomType.rooms}
-                                />
+                                {booking.status === "PENDING" && (
+                                    <StaffBookingActions
+                                        bookingId={booking.id}
+                                        rooms={booking.roomType.rooms}
+                                    />
+                                )}
                             </article>
                         ))}
                     </div>
