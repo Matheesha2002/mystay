@@ -4,6 +4,7 @@ import Footer from "../../components/Footer";
 import RoomPriceForm from "../../components/RoomPriceForm";
 import { prisma } from "../../lib/prisma";
 import { requireStaff } from "../../lib/staff";
+import RoomAvailabilityForm from "../../components/RoomAvailabilityForm";
 
 export default async function StaffRoomsPage() {
     await requireStaff();
@@ -40,7 +41,7 @@ export default async function StaffRoomsPage() {
                 </h1>
 
                 <p className="mt-4 text-lg">
-                    View room types and update their nightly prices.
+                    Update nightly prices and manage physical room availability.
                 </p>
 
                 <Link
@@ -86,20 +87,32 @@ export default async function StaffRoomsPage() {
                                             No physical rooms added.
                                         </p>
                                     ) : (
-                                        <ul className="mt-2 flex flex-wrap gap-2">
+                                        <ul className="mt-3 space-y-3">
                                             {roomType.rooms.map((room) => (
                                                 <li
                                                     key={room.id}
-                                                    className={`rounded-full px-3 py-1 text-sm ${
-                                                        room.isActive
-                                                            ? "bg-green-50 text-green-900"
-                                                            : "bg-gray-100 text-gray-600"
-                                                    }`}
+                                                    className="rounded-xl border border-gray-200 p-4"
                                                 >
-                                                    Room {room.number}
-                                                    {room.isActive
-                                                        ? " · Active"
-                                                        : " · Inactive"}
+                                                    <div className="flex flex-wrap items-center justify-between gap-2">
+                                                        <span className="font-medium">
+                                                            Room {room.number}
+                                                        </span>
+
+                                                        <span
+                                                            className={`rounded-full px-3 py-1 text-sm ${room.isActive
+                                                                ? "bg-green-50 text-green-900"
+                                                                : "bg-gray-100 text-gray-600"
+                                                                }`}
+                                                        >
+                                                            {room.isActive ? "Active" : "Inactive"}
+                                                        </span>
+                                                    </div>
+
+                                                    <RoomAvailabilityForm
+                                                        roomId={room.id}
+                                                        roomNumber={String(room.number)}
+                                                        isActive={room.isActive}
+                                                    />
                                                 </li>
                                             ))}
                                         </ul>
