@@ -4,9 +4,11 @@ import Footer from "../../components/Footer";
 import ExtraPriceForm from "../../components/ExtraPriceForm";
 import { prisma } from "../../lib/prisma";
 import { requireStaff } from "../../lib/staff";
+import ExtraAvailabilityForm from "../../components/ExtraAvailabilityForm";
 
 export default async function StaffExtrasPage() {
     await requireStaff();
+
 
     const [dinner, natureWalk] = await Promise.all([
         prisma.meal.findUnique({
@@ -39,29 +41,29 @@ export default async function StaffExtrasPage() {
     const extras = [
         ...(dinner
             ? [
-                  {
-                      id: dinner.id,
-                      kind: "meal" as const,
-                      name: dinner.name,
-                      description: dinner.description,
-                      price: dinner.pricePerGuestPerNight,
-                      unit: "per guest per night",
-                      isActive: dinner.isActive,
-                  },
-              ]
+                {
+                    id: dinner.id,
+                    kind: "meal" as const,
+                    name: dinner.name,
+                    description: dinner.description,
+                    price: dinner.pricePerGuestPerNight,
+                    unit: "per guest per night",
+                    isActive: dinner.isActive,
+                },
+            ]
             : []),
         ...(natureWalk
             ? [
-                  {
-                      id: natureWalk.id,
-                      kind: "activity" as const,
-                      name: natureWalk.name,
-                      description: natureWalk.description,
-                      price: natureWalk.pricePerGuestPerSession,
-                      unit: "per guest per session",
-                      isActive: natureWalk.isActive,
-                  },
-              ]
+                {
+                    id: natureWalk.id,
+                    kind: "activity" as const,
+                    name: natureWalk.name,
+                    description: natureWalk.description,
+                    price: natureWalk.pricePerGuestPerSession,
+                    unit: "per guest per session",
+                    isActive: natureWalk.isActive,
+                },
+            ]
             : []),
     ];
 
@@ -96,8 +98,8 @@ export default async function StaffExtrasPage() {
                         {!dinner && !natureWalk
                             ? "Dinner and Guided Nature Walk are missing."
                             : !dinner
-                              ? "Dinner is missing."
-                              : "Guided Nature Walk is missing."}{" "}
+                                ? "Dinner is missing."
+                                : "Guided Nature Walk is missing."}{" "}
                         The missing item must be added before its price
                         can be managed.
                     </p>
@@ -115,11 +117,10 @@ export default async function StaffExtrasPage() {
                                 </h2>
 
                                 <span
-                                    className={`rounded-full px-3 py-1 text-sm ${
-                                        extra.isActive
+                                    className={`rounded-full px-3 py-1 text-sm ${extra.isActive
                                             ? "bg-green-50 text-green-900"
                                             : "bg-gray-100 text-gray-600"
-                                    }`}
+                                        }`}
                                 >
                                     {extra.isActive ? "Active" : "Inactive"}
                                 </span>
@@ -148,6 +149,12 @@ export default async function StaffExtrasPage() {
                                 kind={extra.kind}
                                 extraId={extra.id}
                                 currentPrice={extra.price}
+                            />
+
+                            <ExtraAvailabilityForm
+                                kind={extra.kind}
+                                extraId={extra.id}
+                                isActive={extra.isActive}
                             />
                         </article>
                     ))}
