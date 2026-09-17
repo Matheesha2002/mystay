@@ -1,34 +1,6 @@
-// import Link from "next/link";
-
-// export default function Navbar() {
-//     return (
-//         <header className="border-b border-[#173F35]/15">
-//             <nav className="mx-auto flex max-w-6xl items-center justify-between px-6 py-5">
-//                 <Link href="/" className="text-3xl font-bold">
-//                     MyStay
-//                 </Link>
-
-//                 <Link
-//                     href="/rooms"
-//                     className="font-medium hover:underline"
-//                 >
-//                     Rooms
-//                 </Link>
-
-//                 <Link
-//                     href="/plan-my-stay"
-//                     className="rounded-lg bg-[#173F35] px-5 py-3 text-sm font-medium text-white"
-//                 >
-//                     Plan My Stay
-//                 </Link>
-//             </nav>
-//         </header>
-//     );
-// }
-
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { createClient } from "../lib/supabase/client";
@@ -36,6 +8,15 @@ import { createClient } from "../lib/supabase/client";
 export default function Navbar() {
     const pathname = usePathname();
 
+    // Route එක වෙනස් වුණාම mobile menu එකත් reset වෙනවා.
+    return <NavbarContent key={pathname} />;
+}
+
+function NavbarContent() {
+    const menuId = useId();
+    const menuButtonRef = useRef<HTMLButtonElement>(null);
+
+    const [isMenuOpen, setIsMenuOpen] = useState(false);
     const [isLoggedIn, setIsLoggedIn] = useState(false);
     const [isStaff, setIsStaff] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
@@ -78,7 +59,6 @@ export default function Navbar() {
         } = supabase.auth.onAuthStateChange((_event, session) => {
             if (disposed) return;
 
-            // කලින් account එක සඳහා කළ request එක නවත්වනවා.
             staffController?.abort();
 
             setIsLoggedIn(session !== null);
@@ -96,7 +76,28 @@ export default function Navbar() {
             staffController?.abort();
             subscription.unsubscribe();
         };
-    }, [pathname]);
+    }, []);
+
+    useEffect(() => {
+        if (!isMenuOpen) return;
+
+        function handleEscape(event: KeyboardEvent) {
+            if (event.key === "Escape") {
+                setIsMenuOpen(false);
+                menuButtonRef.current?.focus();
+            }
+        }
+
+        document.addEventListener("keydown", handleEscape);
+
+        return () => {
+            document.removeEventListener("keydown", handleEscape);
+        };
+    }, [isMenuOpen]);
+
+    function closeMenu() {
+        setIsMenuOpen(false);
+    }
 
     async function handleLogout() {
         if (isLoggingOut) return;
@@ -119,6 +120,7 @@ export default function Navbar() {
 
             setIsStaff(false);
             setIsLoggedIn(false);
+            setIsMenuOpen(false);
 
             window.location.assign("/");
         } catch {
@@ -127,20 +129,76 @@ export default function Navbar() {
         }
     }
 
+    const linkClass =
+        "flex min-h-11 items-center rounded-lg px-3 py-2 " +
+        "font-medium hover:bg-[#173F35]/5 " +
+        "focus-visible:outline-2 focus-visible:outline-offset-2 " +
+        "focus-visible:outline-[#173F35] lg:px-0 lg:hover:underline";
+
     return (
-        <header className="border-b border-[#173F35]/15 text-[#173F35]">
+        <header className="border-b border-[#173F35]/15 bg-[#F8F6EF] text-[#173F35]">
             <nav
                 aria-label="Main navigation"
-                className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-4 px-6 py-5"
+                className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-x-4 px-6 py-4 lg:py-5"
             >
-                <Link href="/" className="text-3xl font-bold">
+                <Link
+                    href="/"
+                    onClick={closeMenu}
+                    className="rounded text-3xl font-bold focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#173F35]"
+                >
                     MyStay
                 </Link>
 
-                <div className="flex flex-wrap items-center gap-4 sm:gap-6">
+                <button
+                    ref={menuButtonRef}
+                    type="button"
+                    aria-expanded={isMenuOpen}
+                    aria-controls={menuId}
+                    aria-label={
+                        isMenuOpen
+                            ? "Close navigation menu"
+                            : "Open navigation menu"
+                    }
+                    onClick={() => setIsMenuOpen((open) => !open)}
+                    className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-[#173F35]/30 px-3 py-2 text-sm font-semibold hover:bg-[#173F35]/5 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#173F35] lg:hidden"
+                >
+                    <svg
+                        width="20"
+                        height="20"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        aria-hidden="true"
+                    >
+                        {isMenuOpen ? (
+                            <>
+                                <path d="M6 6l12 12" />
+                                <path d="M18 6L6 18" />
+                            </>
+                        ) : (
+                            <>
+                                <path d="M4 6h16" />
+                                <path d="M4 12h16" />
+                                <path d="M4 18h16" />
+                            </>
+                        )}
+                    </svg>
+
+                    {isMenuOpen ? "Close" : "Menu"}
+                </button>
+
+                <div
+                    id={menuId}
+                    className={`${
+                        isMenuOpen ? "flex" : "hidden"
+                    } mt-4 w-full flex-col gap-2 border-t border-[#173F35]/15 pt-4 lg:mt-0 lg:flex lg:w-auto lg:flex-row lg:items-center lg:gap-6 lg:border-0 lg:pt-0`}
+                >
                     <Link
                         href="/rooms"
-                        className="font-medium hover:underline"
+                        onClick={closeMenu}
+                        className={linkClass}
                     >
                         Rooms
                     </Link>
@@ -148,7 +206,8 @@ export default function Navbar() {
                     {!isLoading && isLoggedIn && (
                         <Link
                             href="/my-bookings"
-                            className="font-medium hover:underline"
+                            onClick={closeMenu}
+                            className={linkClass}
                         >
                             My Bookings
                         </Link>
@@ -157,7 +216,8 @@ export default function Navbar() {
                     {!isLoading && isLoggedIn && isStaff && (
                         <Link
                             href="/staff/bookings"
-                            className="font-medium hover:underline"
+                            onClick={closeMenu}
+                            className={linkClass}
                         >
                             Staff Bookings
                         </Link>
@@ -165,7 +225,8 @@ export default function Navbar() {
 
                     <Link
                         href="/plan-my-stay"
-                        className="rounded-lg bg-[#173F35] px-5 py-3 text-sm font-medium text-white hover:bg-[#245548]"
+                        onClick={closeMenu}
+                        className="flex min-h-11 items-center justify-center rounded-lg bg-[#173F35] px-5 py-3 text-sm font-medium text-white hover:bg-[#245548] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#173F35]"
                     >
                         Plan My Stay
                     </Link>
@@ -173,7 +234,7 @@ export default function Navbar() {
                     {isLoading ? (
                         <span
                             role="status"
-                            className="text-sm text-gray-500"
+                            className="px-3 py-2 text-sm text-gray-500"
                         >
                             Loading…
                         </span>
@@ -182,14 +243,15 @@ export default function Navbar() {
                             type="button"
                             onClick={handleLogout}
                             disabled={isLoggingOut}
-                            className="rounded-lg border border-[#173F35] px-4 py-2 text-sm font-medium hover:bg-[#173F35]/5 disabled:cursor-not-allowed disabled:opacity-50"
+                            className="min-h-11 rounded-lg border border-[#173F35] px-4 py-2 text-sm font-medium hover:bg-[#173F35]/5 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#173F35] disabled:cursor-not-allowed disabled:opacity-50"
                         >
                             {isLoggingOut ? "Logging out…" : "Log out"}
                         </button>
                     ) : (
                         <Link
                             href="/login"
-                            className="font-medium hover:underline"
+                            onClick={closeMenu}
+                            className={linkClass}
                         >
                             Log in
                         </Link>
