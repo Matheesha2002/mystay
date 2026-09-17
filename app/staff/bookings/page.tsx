@@ -144,6 +144,13 @@ export default async function StaffBookingsPage({
                     Manage rooms
                 </Link>
 
+                <Link
+                    href="/staff/extras"
+                    className="mt-4 ml-3 inline-block rounded-lg border border-[#173F35] px-4 py-2 text-sm font-semibold hover:bg-[#173F35]/5"
+                >
+                    Manage extras
+                </Link>
+
                 <p className="mt-4 text-lg">
                     Review new requests and view booking history.
                 </p>
