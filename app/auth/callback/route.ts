@@ -5,14 +5,24 @@ import { createClient } from "../../lib/supabase/server";
 export async function GET(request: NextRequest) {
     const code = request.nextUrl.searchParams.get("code");
 
+    // Only this explicitly allowed destination can override Home.
+    const isPasswordReset =
+        request.nextUrl.searchParams.get("next") === "/reset-password";
+
+    const destination = isPasswordReset ? "/reset-password" : "/";
+
+    const headers = {
+        "Cache-Control": "private, no-store",
+    };
+
     if (!code) {
         return new Response(
-            "The confirmation link is missing or invalid.",
+            isPasswordReset
+                ? "The reset link is missing, expired or invalid. Open /forgot-password and request a new link."
+                : "The confirmation link is missing or invalid.",
             {
                 status: 400,
-                headers: {
-                    "Cache-Control": "no-store",
-                },
+                headers,
             }
         );
     }
@@ -25,12 +35,12 @@ export async function GET(request: NextRequest) {
 
         if (error) {
             return new Response(
-                "Unable to complete sign-in. Open the latest confirmation link in the same browser used to register. If your email is already confirmed, sign in with your password.",
+                isPasswordReset
+                    ? "Unable to open this reset link. Request a new link from /forgot-password and open the latest email in the same browser and profile used to request it."
+                    : "Unable to complete sign-in. Open the latest confirmation link in the same browser used to register. If your email is already confirmed, sign in with your password.",
                 {
                     status: 400,
-                    headers: {
-                        "Cache-Control": "no-store",
-                    },
+                    headers,
                 }
             );
         }
@@ -39,12 +49,10 @@ export async function GET(request: NextRequest) {
             "Unable to connect to the authentication service. Please try again.",
             {
                 status: 503,
-                headers: {
-                    "Cache-Control": "no-store",
-                },
+                headers,
             }
         );
     }
 
-    redirect("/");
+    redirect(destination);
 }
