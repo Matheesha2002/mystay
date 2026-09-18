@@ -1,4 +1,4 @@
-@import "tailwindcss";
+/* @import "tailwindcss";
 
 :root {
   --background: #ffffff;
@@ -23,4 +23,59 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
+} */
+
+@import "tailwindcss";
+
+:root {
+  --background: #f8f6ef;
+  --foreground: #173f35;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
+}
+
+::selection {
+  background: #173f35;
+  color: #f8f6ef;
+}
+
+.hotel-heading {
+  font-family: Georgia, "Times New Roman", serif;
+  font-weight: 400;
+  letter-spacing: -0.035em;
+}
+
+.hotel-button {
+  display: inline-flex;
+  min-height: 48px;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  border-radius: 6px;
+  background: #173f35;
+  padding: 14px 24px;
+  color: white;
+  font-size: 14px;
+  font-weight: 500;
+  transition: background-color 180ms ease;
+}
+
+.hotel-button:hover {
+  background: #245548;
+}
+
+.hotel-button:focus-visible {
+  outline: 3px solid #b79b68;
+  outline-offset: 4px;
 }
